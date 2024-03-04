@@ -1,0 +1,159 @@
+-- total drivers
+select count(distinct(driverid)) as  toatal_drivers from  trips;
+
+-- total earnings
+select sum(fare) as fare from trips; 
+
+-- total completed trips
+select count(distinct(tripid)) as trips from trips;
+
+-- total searches
+select sum(searches) as searches from trips_details;
+
+-- total searches which got estimate
+select sum(searches_got_estimate) as searches from trips_details;
+
+-- total searches for quotes
+select sum(searches_for_quotes) as searches from trips_details;
+
+-- total searches which got quotes
+select sum(searches_got_quotes) as searches from trips_details;
+
+-- number of trips cancelled by driver
+select count(*)- sum(driver_not_cancelled) as searches from trips_details;
+
+-- total otp entered
+select sum(otp_entered) as searches from trips_details;
+
+-- total end ride
+select sum(end_ride) as searches from trips_details;
+
+-- average fare per trip 
+select avg(fare) from trips;
+
+-- distance travelled
+select sum(distance) from trips;
+
+
+-- distance travelled
+select sum(distance) from trips;
+
+-- which is the most used payment method
+select method from payment a inner join (
+select faremethod,count(faremethod)as faremethods from trips group by faremethod order by faremethods desc limit 1) b
+on a.id=b.faremethod;
+
+-- the highest payment was made through which format on a trip
+select method from payment a inner join (
+select * from trips order by fare desc limit 1) b
+on a.id=b.faremethod;
+
+-- the highest payment was made through which format on a entire day
+select method from payment a inner join (
+select faremethod,sum(fare) from trips group by faremethod order by sum(fare) desc limit 1) b
+on a.id=b.faremethod;
+
+-- which two  locations has most number of trips
+select loc_from,loc_to,count(distinct(tripid)) from trips
+group by loc_from,loc_to order by count(distinct(tripid)) desc limit 2;
+
+select * from (
+select *,
+dense_rank() over(order by trip desc) rnk 
+from (
+select loc_from,loc_to,count(distinct driverid) trip from trips group by loc_from,loc_to order by trip desc) a )b
+where rnk =1;
+
+-- top 5 earning drivers
+select * from (
+select * ,
+dense_rank() over(order by fare desc) rnk
+from
+(select driverid,sum(fare) fare from trips group by driverid) a) b
+where rnk <6;
+ 
+ -- which duration hour had most trips
+ select * from (
+ select *,
+ rank() over(order by cnt desc) rnk
+ from
+ (select duration ,count(tripid) cnt from trips group by duration)a)b
+ where rnk = 1;
+
+-- which driver , customer had more orders
+select * from (
+select *,
+rank() over(order by cnt desc) rnk
+from
+(select driverid,custid,count(tripid) cnt from trips group by driverid,custid)a)b
+where rnk =1;
+
+-- search to estimate rate 
+select sum(searches_got_estimate)*100/sum(searches) from trips_details;
+
+-- estimate to search for  quote rates
+select sum(searches_for_quotes)*100/sum(searches_got_estimate) from trips_details;
+
+-- estimate acceptance rate
+select sum(searches_got_quotes)*100/sum(searches_for_quotes) from trips_details;
+
+-- quote to booking rate
+select count(tripid)-sum(driver_not_cancelled) from trips_details;
+select (count(tripid)-sum(driver_not_cancelled))*100/sum(searches_got_quotes) from trips_details;
+
+-- booking  cancellation rate
+select sum(end_ride)*100/sum(searches_got_quotes) from trips_details;
+
+-- conversion rate
+select sum(end_ride)*100/sum(searches) from trips_details;
+
+-- which location got the highest number of trips in each duration present 
+select * from (
+select *,
+rank() over(partition by duration order by trips desc) rnk
+from  
+(select duration,loc_from,count(distinct tripid) trips  from trips group by duration,loc_from)a) b
+where rnk =1;
+
+-- which duration got highest number of trips in each of the location present
+select * from (
+select *,
+rank() over(partition by loc_from order by trips desc) rnk
+from  
+(select duration,loc_from,count(distinct tripid) trips  from trips group by duration,loc_from)a) b
+where rnk =1;
+
+-- which area got highest trips
+select * from (
+select * ,
+rank() over(order by fare desc) rnk
+from(
+select loc_from,sum(fare) fare from trips group by loc_from )a)b
+where rnk = 1;
+
+-- which area got highest number of cancellations from drivers
+select * from (
+select * ,
+rank() over(order by can desc) rnk
+from(
+select loc_from,count(*)-sum(driver_not_cancelled) as can from trips_details group by loc_from)a)b
+where rnk = 1;
+
+-- which area got highest number of cancellations from customers
+select * from (
+select * ,
+rank() over(order by can desc) rnk
+from(
+select loc_from,count(*)-sum(customer_not_cancelled) as can from trips_details group by loc_from)a)b
+where rnk = 1;
+
+-- which duration got highest trips and fares
+select * from (
+select *,
+rank() over(order by fare desc) rnk
+ from
+(select duration,sum(fare) fare from trips group by duration)a )b
+where rnk =1;
+
+
+
